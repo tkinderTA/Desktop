@@ -22,6 +22,9 @@ label_date = None
 # time label
 label_time = None
 
+# stock label
+label_stock = None
+
 # alpha (used at hide mode)
 value_alpha = 1
 
@@ -63,7 +66,7 @@ def hideWindow():
 Print time
 """
 def printTime():
-	global label_date, label_time
+	global label_date, label_time, label_stock
 
 	# get time
 	time_now = time.localtime(time.time())
@@ -92,6 +95,37 @@ def printTime():
 		str_now = "AM %02d:%02d:%02d" % (hour_now, min_now, sec_now)
 
 	label_time.configure(text = str_now)
+
+
+	str_now = None
+	str_temp = None
+	http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
+	for line in http_res.text.split("\n"):
+		if "전일대비" in line:
+			str_temp = line.strip().split(' ')
+			if str_temp[5] == "플러스":
+				str_now = "+" + str_temp[6] + "%"
+			elif str_temp[5] == "마이너스":
+				str_now = "-" + str_temp[6] + "%"
+			else:
+				str_now = str_temp[6] + "%"
+			break
+
+	http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
+	for line in http_res.text.split("\n"):
+		if "전일대비" in line:
+			str_temp = line.strip().split(' ')
+			if str_temp[5] == "플러스":
+				str_now += " / +" + str_temp[6] + "%"
+			elif str_temp[5] == "마이너스":
+				str_now += " / -" + str_temp[6] + "%"
+			else:
+				str_now += " / " + str_temp[6] + "%"
+			break
+
+	label_stock.configure(text = str_now)
+
+
 
 	# exit program
 	if time_now.tm_hour == 0 and time_now.tm_min == 0:
@@ -213,7 +247,7 @@ def checkTodo():
 Main function
 """
 def main():
-	global main_window, label_time, label_date
+	global main_window, label_time, label_date, label_stock
 	global list_check
 
 	loadTodo()
@@ -263,6 +297,11 @@ def main():
 		check_todo.configure(anchor = "w")
 		check_todo.pack(fill = BOTH)
 		list_check.append((check_todo, check_var))
+
+	label_stock = Label(main_window)
+	label_stock.configure(background = "white")
+#	label_stock.configure(font = Font(family = "맑은 고딕", size = 20))
+	label_stock.pack()
 
 
 	button_alpha = Button(main_window, command = hideWindow, text = "Hide mode")
