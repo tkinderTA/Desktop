@@ -34,12 +34,22 @@ list_todo = []
 # check button related to todo
 list_check = []
 
+# update period
+time_update = None
+
+# todo canvas
+canvas_todo = None
+
+# memo text
+text_memo = None
+
 """
 Constant
 """
 
 # time delay
 UNIT_DELAY = 500
+UNIT_UPDATE = 10
 
 # window location
 POS_WINDOW = "-0-40"
@@ -54,7 +64,7 @@ def hideWindow():
 	global value_alpha
 
 	if value_alpha == 1:
-		value_alpha = 0.1
+		value_alpha = 0.3
 	else:
 		value_alpha = 1
 
@@ -66,7 +76,8 @@ def hideWindow():
 Print time
 """
 def printTime():
-	global label_date, label_time, label_stock
+	global label_date, label_time, label_stock, canvas_todo
+	global time_update
 
 	# get time
 	time_now = time.localtime(time.time())
@@ -96,42 +107,51 @@ def printTime():
 
 	label_time.configure(text = str_now)
 
+	# update somethings
+	time_update += 1
 
-	str_now = None
-	str_temp = None
-	http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
-	for line in http_res.text.split("\n"):
-		if "전일대비" in line:
-			str_temp = line.strip().split(' ')
-			if str_temp[5] == "플러스":
-				str_now = "+" + str_temp[6] + "%"
-			elif str_temp[5] == "마이너스":
-				str_now = "-" + str_temp[6] + "%"
-			else:
-				str_now = str_temp[6] + "%"
-			break
+	# according to period
+	if time_update == UNIT_UPDATE:
+		time_update = 0
+		
+		# save free memo
+		saveFree()
 
-	http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
-	for line in http_res.text.split("\n"):
-		if "전일대비" in line:
-			str_temp = line.strip().split(' ')
-			if str_temp[5] == "플러스":
-				str_now += " / +" + str_temp[6] + "%"
-			elif str_temp[5] == "마이너스":
-				str_now += " / -" + str_temp[6] + "%"
-			else:
-				str_now += " / " + str_temp[6] + "%"
-			break
+		# update stock information
+		str_now = None
+		str_temp = None
+		http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
+		for line in http_res.text.split("\n"):
+			if "전일대비" in line:
+				str_temp = line.strip().split(' ')
+				if str_temp[5] == "플러스":
+					str_now = "+" + str_temp[6] + "%"
+				elif str_temp[5] == "마이너스":
+					str_now = "-" + str_temp[6] + "%"
+				else:
+					str_now = str_temp[6] + "%"
+				break
 
-	label_stock.configure(text = str_now)
+		http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
+		for line in http_res.text.split("\n"):
+			if "전일대비" in line:
+				str_temp = line.strip().split(' ')
+				if str_temp[5] == "플러스":
+					str_now += " / +" + str_temp[6] + "%"
+				elif str_temp[5] == "마이너스":
+					str_now += " / -" + str_temp[6] + "%"
+				else:
+					str_now += " / " + str_temp[6] + "%"
+				break
 
-
+		label_stock.configure(text = str_now)
 
 	# exit program
 	if time_now.tm_hour == 0 and time_now.tm_min == 0:
 		main_window.destroy()
 	else:
 		main_window.after(UNIT_DELAY, printTime)
+
 
 """
 Load todo
@@ -187,6 +207,36 @@ def loadTodo():
 			if item.split("\\")[1].strip() == "no":
 				list_todo.append(item.split("\\")[0])
 		file.close()
+
+"""
+Save free memo
+"""
+def saveFree():
+	global text_free
+
+	os.chdir("C:\\Desktop")
+	file = open("memo.txt", "w")
+	file.write(text_free.get("1.0", END))
+	file.close()
+
+
+"""
+Load free memo
+"""
+def loadFree():
+	global text_free
+
+	try:
+		os.chdir("C:\\Desktop")
+		file = open("memo.txt", "r")
+
+		for line in file.readlines():
+			text_free.insert(END, line)
+		file.close()
+	except:
+		return
+
+
 """
 Todo event
 """
@@ -242,13 +292,22 @@ def checkTodo():
 		file.write(content + "\n")
 	file.close()
 
+"""
+Exit program
+"""
+def exitProgram():
+	# backup
+	saveFree()
+
+	sys.exit()
 
 """
 Main function
 """
 def main():
-	global main_window, label_time, label_date, label_stock
+	global main_window, label_time, label_date, label_stock, canvas_todo, text_free
 	global list_check
+	global time_update
 
 	loadTodo()
 
@@ -264,24 +323,49 @@ def main():
 	main_window.overrideredirect(True)
 	main_window.attributes('-alpha', value_alpha)
 
-	label_date = Label(main_window)
+	frame_top = Frame(main_window)
+	frame_top.grid(row = 0, columnspan = 2)
+
+	frame_left = Frame(main_window)
+	frame_left.grid(row = 1, column = 0)
+	frame_left.configure(background = "white")
+
+	frame_right = Frame(main_window)
+	frame_right.grid(row = 1, column = 1)
+
+	frame_bottom = Frame(main_window)
+	frame_bottom.grid(row = 2, columnspan = 2)
+
+	label_date = Label(frame_top)
 	label_date.configure(background = "white")
 	label_date.configure(font = Font(family = "Sandoll 미생", size = 15))
-	label_date.pack()
+	label_date.pack(fill = BOTH)
 
-	label_time = Label(main_window)
+	label_time = Label(frame_top)
 	label_time.configure(background = "white")
 	label_time.configure(font = Font(family = "맑은 고딕", size = 20))
-	label_time.pack()
+	label_time.pack(fill = BOTH)
 
-
-	label_todo = Label(main_window)
+	label_todo = Label(frame_left)
 	label_todo.configure(background = "white")
 	label_todo.configure(anchor = W)
 	label_todo.configure(text = "\n- 할일 -")
 	label_todo.pack(fill = BOTH)
 
+	frame_todo = Frame(frame_left)
+	frame_todo.pack(fill = X)
+	frame_todo.configure(background = "white")
 
+	canvas_todo = Canvas(frame_todo, width = 1, height = 1)
+	canvas_todo.pack(fill = BOTH, side = LEFT, expand = True)
+	scroll_todo = Scrollbar(frame_todo, command = canvas_todo.yview)
+	canvas_todo.configure(yscrollcommand = scroll_todo.set)
+	scroll_todo.pack(fill = Y, side = RIGHT)
+	scroll_todo.configure(background = "white")
+
+	frame_check = Frame(canvas_todo)
+	canvas_todo.create_window(0, 0, window = frame_check, anchor = "nw")
+	frame_check.configure(background = "white")
 	# for rebooting
 	if len(list_check) > 0:
 		del(list_check)
@@ -291,21 +375,40 @@ def main():
 	check_var = None
 	for item in list_todo:
 		check_var = IntVar()
-		check_todo = tkinter.Checkbutton(main_window, text = item, command = checkTodo, variable = check_var)
+		check_todo = tkinter.Checkbutton(frame_check, text = item, command = checkTodo, variable = check_var)
 		check_todo.configure(background = "white")
 		check_todo.configure(font = Font(family = "Sandoll 미생", size = 15))
-		check_todo.configure(anchor = "w")
+		check_todo.configure(anchor = W)
 		check_todo.pack(fill = BOTH)
 		list_check.append((check_todo, check_var))
+	
+	if check_todo is not None:
+		check_todo.update()
+		canvas_todo.configure(width = (check_todo.winfo_width() + 10))
+		canvas_todo.configure(height = (check_todo.winfo_height() * 4))
+		canvas_todo.configure(background = "white")
+		canvas_todo.configure(scrollregion = (0, 0, check_todo.winfo_width(), check_todo.winfo_height() * len(list_todo)))
 
-	label_stock = Label(main_window)
+	label_stock = Label(frame_left)
 	label_stock.configure(background = "white")
-#	label_stock.configure(font = Font(family = "맑은 고딕", size = 20))
-	label_stock.pack()
+	label_stock.pack(fill = BOTH, side = LEFT)
 
+	text_free = Text(frame_right, width = 20, height = 5)
+	text_free.pack(fill = BOTH, side = LEFT)
+	scroll_free = Scrollbar(frame_right, command = text_free.yview)
+	text_free.configure(yscrollcommand = scroll_free.set)
+	scroll_free.pack(fill = Y, side = RIGHT)
+	
+	# load memo, don't change this code location
+	loadFree()
 
-	button_alpha = Button(main_window, command = hideWindow, text = "Hide mode")
-	button_alpha.pack()
+	button_alpha = Button(frame_bottom, command = hideWindow, text = "Hide")
+	button_alpha.pack(side = LEFT)
+
+	button_exit = Button(frame_bottom, command = exitProgram, text = "Exit")
+	button_exit.pack(side = LEFT)
+
+	time_update = UNIT_UPDATE - 1
 
 	main_window.after(UNIT_DELAY, printTime)
 	main_window.mainloop()
