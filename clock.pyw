@@ -12,36 +12,13 @@ import sys
 """
 Global variance
 """
-
-# window
-main_window = None
-
-# date label
-label_date = None
-
-# time label
-label_time = None
-
-# stock label
-label_stock = None
-
 # alpha (used at hide mode)
 value_alpha = 1
 
-# todo list
-list_todo = []
-
-# check button related to todo
-list_check = []
-
-# update period
-time_update = None
-
-# todo canvas
-canvas_todo = None
-
-# memo text
-text_memo = None
+# todo width and height
+width_check = None
+height_check = None
+size_check = None
 
 """
 Constant
@@ -49,7 +26,7 @@ Constant
 
 # time delay
 UNIT_DELAY = 500
-UNIT_UPDATE = 10
+UNIT_UPDATE = 20
 
 # window location
 POS_WINDOW = "-0-40"
@@ -61,12 +38,15 @@ DAY_WEEK = ["월요일", "화요일", "수요일", "목요일", "금요일", "�
 Hide(semi) mode
 """
 def hideWindow():
+	global main_window
 	global value_alpha
 
 	if value_alpha == 1:
-		value_alpha = 0.3
+		value_alpha = 0.2
+		main_window.wm_attributes("-topmost", False)
 	else:
 		value_alpha = 1
+		main_window.wm_attributes("-topmost", True)
 
 	main_window.attributes("-alpha", value_alpha)
 
@@ -160,9 +140,12 @@ def loadTodo():
 	global list_todo
 
 	# for rebooting
-	if len(list_todo) > 0:
-		del(list_todo)
-		list_todo = []	
+	try:
+		if len(list_todo) > 0:
+			del(list_todo)
+			list_todo = []	
+	except:
+		list_todo = []
 
 	if not(os.path.isdir("C:\\Desktop")):
 		os.makedirs(os.path.join("C:\\Desktop"))
@@ -233,7 +216,7 @@ def loadFree():
 		for line in file.readlines():
 			text_free.insert(END, line)
 		file.close()
-	except:
+	except NameError:
 		return
 
 
@@ -241,7 +224,10 @@ def loadFree():
 Todo event
 """
 def checkTodo():
-	global list_check
+	global canvas_todo
+	global list_todo
+	global list_check, width_check, height_check, size_check
+	
 	
 	# ask question
 	result = askquestion("질문", "정말 완료하셨습니까?")
@@ -263,6 +249,9 @@ def checkTodo():
 			break
 
 	list_check[index][0].after(UNIT_DELAY, list_check[index][0].destroy)
+	size_check -= 1
+	if size_check is not None:
+		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * size_check))
 
 
 	# get time
@@ -306,7 +295,7 @@ Main function
 """
 def main():
 	global main_window, label_time, label_date, label_stock, canvas_todo, text_free
-	global list_check
+	global list_check, width_check, height_check, size_check
 	global time_update
 
 	loadTodo()
@@ -319,7 +308,7 @@ def main():
 	main_window.resizable(False, False)
 
 	# attribute setting for "always on top"
-	main_window.wm_attributes("-topmost", 1)
+	main_window.wm_attributes("-topmost", True)
 	main_window.overrideredirect(True)
 	main_window.attributes('-alpha', value_alpha)
 
@@ -327,11 +316,11 @@ def main():
 	frame_top.grid(row = 0, columnspan = 2)
 
 	frame_left = Frame(main_window)
-	frame_left.grid(row = 1, column = 0)
+	frame_left.grid(row = 1, column = 0, padx = 5)
 	frame_left.configure(background = "white")
 
 	frame_right = Frame(main_window)
-	frame_right.grid(row = 1, column = 1)
+	frame_right.grid(row = 1, column = 1, padx = 5)
 
 	frame_bottom = Frame(main_window)
 	frame_bottom.grid(row = 2, columnspan = 2)
@@ -366,14 +355,20 @@ def main():
 	frame_check = Frame(canvas_todo)
 	canvas_todo.create_window(0, 0, window = frame_check, anchor = "nw")
 	frame_check.configure(background = "white")
+
 	# for rebooting
-	if len(list_check) > 0:
-		del(list_check)
+	try:
+		if len(list_check) > 0:
+			del(list_check)
+			list_check = []
+	except NameError:
 		list_check = []
 
 	check_todo = None
 	check_var = None
+	size_check = 0
 	for item in list_todo:
+		size_check += 1
 		check_var = IntVar()
 		check_todo = tkinter.Checkbutton(frame_check, text = item, command = checkTodo, variable = check_var)
 		check_todo.configure(background = "white")
@@ -384,16 +379,21 @@ def main():
 	
 	if check_todo is not None:
 		check_todo.update()
-		canvas_todo.configure(width = (check_todo.winfo_width() + 10))
-		canvas_todo.configure(height = (check_todo.winfo_height() * 4))
+		width_check = check_todo.winfo_width()
+		height_check = check_todo.winfo_height()
+		if width_check < 200:
+			canvas_todo.configure(width = 200)
+		else:
+			canvas_todo.configure(width = (width_check + 10))
+		canvas_todo.configure(height = (height_check * 4))
 		canvas_todo.configure(background = "white")
-		canvas_todo.configure(scrollregion = (0, 0, check_todo.winfo_width(), check_todo.winfo_height() * len(list_todo)))
+		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * len(list_todo)))
 
 	label_stock = Label(frame_left)
 	label_stock.configure(background = "white")
 	label_stock.pack(fill = BOTH, side = LEFT)
 
-	text_free = Text(frame_right, width = 20, height = 5)
+	text_free = Text(frame_right, width = 50, height = 10)
 	text_free.pack(fill = BOTH, side = LEFT)
 	scroll_free = Scrollbar(frame_right, command = text_free.yview)
 	text_free.configure(yscrollcommand = scroll_free.set)
