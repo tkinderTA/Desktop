@@ -38,17 +38,17 @@ DAY_WEEK = ["월요일", "화요일", "수요일", "목요일", "금요일", "�
 Hide(semi) mode
 """
 def hideWindow():
-	global main_window
+	global window_main
 	global value_alpha
 
 	if value_alpha == 1:
 		value_alpha = 0.2
-		main_window.wm_attributes("-topmost", False)
+		window_main.wm_attributes("-topmost", False)
 	else:
 		value_alpha = 1
-		main_window.wm_attributes("-topmost", True)
+		window_main.wm_attributes("-topmost", True)
 
-	main_window.attributes("-alpha", value_alpha)
+	window_main.attributes("-alpha", value_alpha)
 
 
 
@@ -111,6 +111,10 @@ def printTime():
 				else:
 					str_now = str_temp[6] + "%"
 				break
+		"""
+		if float(str_now[:-1]) > 0:
+			showinfo("알림", "hello")
+		"""	
 
 		http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
 		for line in http_res.text.split("\n"):
@@ -128,9 +132,9 @@ def printTime():
 
 	# exit program
 	if time_now.tm_hour == 0 and time_now.tm_min == 0:
-		main_window.destroy()
+		window_main.destroy()
 	else:
-		main_window.after(UNIT_DELAY, printTime)
+		window_main.after(UNIT_DELAY, printTime)
 
 
 """
@@ -294,35 +298,35 @@ def exitProgram():
 Main function
 """
 def main():
-	global main_window, label_time, label_date, label_stock, canvas_todo, text_free
+	global window_main, label_time, label_date, label_stock, canvas_todo, text_free
 	global list_check, width_check, height_check, size_check
 	global time_update
 
 	loadTodo()
 
-	main_window = Tk()
-	main_window.configure(background = "white")
+	window_main = Tk()
+	window_main.configure(background = "white")
 
 	# coordinate
-	main_window.geometry(POS_WINDOW)
-	main_window.resizable(False, False)
+	window_main.geometry(POS_WINDOW)
+	window_main.resizable(False, False)
 
 	# attribute setting for "always on top"
-	main_window.wm_attributes("-topmost", True)
-	main_window.overrideredirect(True)
-	main_window.attributes('-alpha', value_alpha)
+	window_main.wm_attributes("-topmost", True)
+	window_main.overrideredirect(True)
+	window_main.attributes('-alpha', value_alpha)
 
-	frame_top = Frame(main_window)
+	frame_top = Frame(window_main)
 	frame_top.grid(row = 0, columnspan = 2)
 
-	frame_left = Frame(main_window)
+	frame_left = Frame(window_main)
 	frame_left.grid(row = 1, column = 0, padx = 5)
 	frame_left.configure(background = "white")
 
-	frame_right = Frame(main_window)
+	frame_right = Frame(window_main)
 	frame_right.grid(row = 1, column = 1, padx = 5)
 
-	frame_bottom = Frame(main_window)
+	frame_bottom = Frame(window_main)
 	frame_bottom.grid(row = 2, columnspan = 2)
 
 	label_date = Label(frame_top)
@@ -402,16 +406,20 @@ def main():
 	# load memo, don't change this code location
 	loadFree()
 
-	button_alpha = Button(frame_bottom, command = hideWindow, text = "Hide")
-	button_alpha.pack(side = LEFT)
-
 	button_exit = Button(frame_bottom, command = exitProgram, text = "Exit")
-	button_exit.pack(side = LEFT)
+	button_exit.pack(fill = BOTH)
 
+	button_alpha = Button(frame_bottom, command = hideWindow, text = "Hide")
+	button_alpha.pack(fill = BOTH)
+
+	# resize button size
+	width_top = window_main.winfo_width()
+	button_exit.configure(width = (width_top + 20))
+	
 	time_update = UNIT_UPDATE - 1
 
-	main_window.after(UNIT_DELAY, printTime)
-	main_window.mainloop()
+	window_main.after(UNIT_DELAY, printTime)
+	window_main.mainloop()
 
 """
 Start application
