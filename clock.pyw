@@ -5,6 +5,7 @@ import time, math
 from tkinter import *
 from tkinter.font import *
 from tkinter.messagebox import *
+from tendo import singleton
 import requests
 import os
 import sys
@@ -509,6 +510,11 @@ Start application
 """
 if __name__ ==  "__main__":
 	global start
+
+	try:
+		python = singleton.SingleInstance()
+	except:
+		sys.exit()
 
 	print("hello")
 
