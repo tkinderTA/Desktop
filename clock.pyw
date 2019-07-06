@@ -8,6 +8,8 @@ from tkinter.messagebox import *
 import requests
 import os
 import sys
+import calendar
+import threading
 
 """
 Global variance
@@ -20,19 +22,23 @@ width_check = None
 height_check = None
 size_check = None
 
+# for exit signal
+signal_play = True
+
 """
 Constant
 """
-
 # time delay
-UNIT_DELAY = 500
-UNIT_UPDATE = 20
+UNIT_DELAY = 0.5
+UNIT_MIN = 60
+PERIOD_PARSING = 10
+PERIOD_MEMO = 10
 
 # window location
 POS_WINDOW = "-0-40"
 
 # week day
-DAY_WEEK = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
 
 """
 Hide(semi) mode
@@ -49,92 +55,6 @@ def hideWindow():
 		window_main.wm_attributes("-topmost", True)
 
 	window_main.attributes("-alpha", value_alpha)
-
-
-
-"""
-Print time
-"""
-def printTime():
-	global label_date, label_time, label_stock, canvas_todo
-	global time_update
-
-	# get time
-	now_time = time.localtime(time.time())
-
-	# set date
-	now_year = now_time.tm_year
-	now_mon = now_time.tm_mon
-	now_day = now_time.tm_mday
-	now_week = now_time.tm_wday
-
-	str_now = "%04d-%02d-%02d %s" % (now_year, now_mon, now_day, DAY_WEEK[now_week])
-
-	label_date.configure(text = str_now)
-	
-
-	# set time
-	now_hour = now_time.tm_hour % 12
-	if now_hour == 0:
-		now_hour = 12
-	now_min = now_time.tm_min
-	now_sec = now_time.tm_sec
-	
-	if now_time.tm_hour >= 12:
-		str_now = "PM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
-	else:
-		str_now = "AM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
-
-	label_time.configure(text = str_now)
-
-	# update somethings
-	time_update += 1
-
-	# according to period
-	if time_update == UNIT_UPDATE:
-		time_update = 0
-		
-		# save free memo
-		saveFree()
-
-		# update stock information
-		str_now = None
-		str_temp = None
-		http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
-		for line in http_res.text.split("\n"):
-			if "전일대비" in line:
-				str_temp = line.strip().split(' ')
-				if str_temp[5] == "플러스":
-					str_now = "+" + str_temp[6] + "%"
-				elif str_temp[5] == "마이너스":
-					str_now = "-" + str_temp[6] + "%"
-				else:
-					str_now = str_temp[6] + "%"
-				break
-		"""
-		if float(str_now[:-1]) > 0:
-			showinfo("알림", "hello")
-		"""	
-
-		http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
-		for line in http_res.text.split("\n"):
-			if "전일대비" in line:
-				str_temp = line.strip().split(' ')
-				if str_temp[5] == "플러스":
-					str_now += " / +" + str_temp[6] + "%"
-				elif str_temp[5] == "마이너스":
-					str_now += " / -" + str_temp[6] + "%"
-				else:
-					str_now += " / " + str_temp[6] + "%"
-				break
-
-		label_stock.configure(text = str_now)
-
-	# exit program
-	if now_time.tm_hour == 0 and now_time.tm_min == 0:
-		window_main.destroy()
-	else:
-		window_main.after(UNIT_DELAY, printTime)
 
 
 """
@@ -289,10 +209,151 @@ def checkTodo():
 Exit program
 """
 def exitProgram():
+	global signal_play
+	global thread_workers
+
+	# exit daemon thread
+	signal_play = False
+	for worker in thread_workers:
+		worker.join()
+
+	print("bye")
+
 	# backup
 	saveFree()
 
 	sys.exit()
+
+"""
+Reboot program
+"""
+def rebootProgram():
+	print("rebooting...")
+
+
+"""
+Time thread
+"""
+def threadTime():
+	global signal_play
+	global label_date, label_time
+	global start
+
+	while signal_play:
+
+		# get time
+		now_time = time.localtime(time.time())
+
+		# set date label
+		now_year = now_time.tm_year
+		now_mon = now_time.tm_mon
+		now_day = now_time.tm_mday
+		now_week = now_time.tm_wday
+
+		str_now = "%04d-%02d-%02d %s" % (now_year, now_mon, now_day, (DAY_WEEK[now_week] + "요일"))
+
+		label_date.configure(text = str_now)
+	
+		# set time label
+		now_hour = now_time.tm_hour % 12
+		if now_hour == 0:
+			now_hour = 12
+		now_min = now_time.tm_min
+		now_sec = now_time.tm_sec
+	
+		if now_time.tm_hour >= 12:
+			str_now = "PM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
+		else:
+			str_now = "AM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
+
+		label_time.configure(text = str_now)
+
+		# reboot program
+		if start != now_day:
+			rebootProgram()
+			start = now_day
+		
+		# wait
+		time.sleep(UNIT_DELAY)
+
+
+"""
+Parsing thead
+"""
+def threadParsing():
+	global signal_play
+	global label_stock
+	global time_parsing
+
+	while signal_play:
+		
+		time_parsing += 1
+
+		# according to period
+		if time_parsing == PERIOD_PARSING:
+			time_parsing = 0
+		
+			# save free memo
+			saveFree()
+
+			# update stock information
+			str_now = None
+			str_temp = None
+			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
+			for line in http_res.text.split("\n"):
+				if "전일대비" in line:
+					str_temp = line.strip().split(' ')
+					if str_temp[5] == "플러스":
+						str_now = "+" + str_temp[6] + "%"
+					elif str_temp[5] == "마이너스":
+						str_now = "-" + str_temp[6] + "%"
+					else:
+						str_now = str_temp[6] + "%"
+					break
+			"""
+			if float(str_now[:-1]) > 0:
+				showinfo("알림", "hello")
+			"""	
+
+			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
+			for line in http_res.text.split("\n"):
+				if "전일대비" in line:
+					str_temp = line.strip().split(' ')
+					if str_temp[5] == "플러스":
+						str_now += " / +" + str_temp[6] + "%"
+					elif str_temp[5] == "마이너스":
+						str_now += " / -" + str_temp[6] + "%"
+					else:
+						str_now += " / " + str_temp[6] + "%"
+					break
+	
+			label_stock.configure(text = str_now)
+
+		# wait
+		time.sleep(UNIT_DELAY)
+
+
+"""
+Memo thead
+"""
+def threadMemo():
+	global signal_play
+	global time_memo
+
+	while signal_play:
+		
+		time_memo += 1
+
+		# according to period
+		if time_memo == PERIOD_MEMO:
+			time_memo = 0
+		
+			# save free memo
+			saveFree()
+		
+		# wait
+		time.sleep(UNIT_DELAY)
+
 
 """
 Main function
@@ -300,7 +361,8 @@ Main function
 def main():
 	global window_main, label_time, label_date, label_stock, canvas_todo, text_free
 	global list_check, width_check, height_check, size_check
-	global time_update
+	global thread_workers
+	global time_parsing, time_memo
 
 	loadTodo()
 
@@ -389,7 +451,7 @@ def main():
 			canvas_todo.configure(width = 200)
 		else:
 			canvas_todo.configure(width = (width_check + 10))
-		canvas_todo.configure(height = (height_check * 4))
+		canvas_todo.configure(height = (height_check * 8))
 		canvas_todo.configure(background = "white")
 		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * len(list_todo)))
 
@@ -416,16 +478,38 @@ def main():
 	width_top = window_main.winfo_width()
 	button_exit.configure(width = (width_top + 20))
 	
-	time_update = UNIT_UPDATE - 1
+	# for rebooting
+	try:
+		if len(thread_workers) > 0:
+			del(thread_workers)
+			thread_workers = []
+	except NameError:
+		thread_workers = []
 
-	window_main.after(UNIT_DELAY, printTime)
+	# make threads
+	time_parsing = PERIOD_PARSING - 1
+	time_memo = PERIOD_MEMO - 1
+
+	thread_worker = threading.Thread(target = threadTime)
+	thread_worker.daemon = True
+	thread_worker.start()
+	thread_workers.append(thread_worker)
+
+	thread_worker = threading.Thread(target = threadMemo)
+	thread_worker.daemon = True
+	thread_worker.start()
+	thread_workers.append(thread_worker)
+
 	window_main.mainloop()
 
 """
 Start application
 """
 if __name__ ==  "__main__":
-	while True:
-		main()
-		time.sleep(1)
-	
+	global start
+
+	print("hello")
+
+	start = time.localtime(time.time()).tm_mday
+
+	main()
