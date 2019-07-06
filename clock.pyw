@@ -171,8 +171,8 @@ def checkTodo():
 			list_check[i][0].deselect()
 			index = i
 			break
-
-	list_check[index][0].after(UNIT_DELAY, list_check[index][0].destroy)
+	
+	list_check[index][0].destroy()
 	size_check -= 1
 	if size_check is not None:
 		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * size_check))
