@@ -60,30 +60,30 @@ def printTime():
 	global time_update
 
 	# get time
-	time_now = time.localtime(time.time())
+	now_time = time.localtime(time.time())
 
 	# set date
-	year_now = time_now.tm_year
-	mon_now = time_now.tm_mon
-	day_now = time_now.tm_mday
-	week_now = time_now.tm_wday
+	now_year = now_time.tm_year
+	now_mon = now_time.tm_mon
+	now_day = now_time.tm_mday
+	now_week = now_time.tm_wday
 
-	str_now = "%04d-%02d-%02d %s" % (year_now, mon_now, day_now, DAY_WEEK[week_now])
+	str_now = "%04d-%02d-%02d %s" % (now_year, now_mon, now_day, DAY_WEEK[now_week])
 
 	label_date.configure(text = str_now)
 	
 
 	# set time
-	hour_now = time_now.tm_hour % 12
-	if hour_now == 0:
-		hour_now = 12
-	min_now = time_now.tm_min
-	sec_now = time_now.tm_sec
+	now_hour = now_time.tm_hour % 12
+	if now_hour == 0:
+		now_hour = 12
+	now_min = now_time.tm_min
+	now_sec = now_time.tm_sec
 	
-	if time_now.tm_hour >= 12:
-		str_now = "PM %02d:%02d:%02d" % (hour_now, min_now, sec_now)
+	if now_time.tm_hour >= 12:
+		str_now = "PM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
 	else:
-		str_now = "AM %02d:%02d:%02d" % (hour_now, min_now, sec_now)
+		str_now = "AM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
 
 	label_time.configure(text = str_now)
 
@@ -131,7 +131,7 @@ def printTime():
 		label_stock.configure(text = str_now)
 
 	# exit program
-	if time_now.tm_hour == 0 and time_now.tm_min == 0:
+	if now_time.tm_hour == 0 and now_time.tm_min == 0:
 		window_main.destroy()
 	else:
 		window_main.after(UNIT_DELAY, printTime)
@@ -155,14 +155,14 @@ def loadTodo():
 		os.makedirs(os.path.join("C:\\Desktop"))
 
 	# get time
-	time_now = time.localtime(time.time())
+	now_time = time.localtime(time.time())
 
 	# set date
-	year_now = time_now.tm_year
-	mon_now = time_now.tm_mon
-	day_now = time_now.tm_mday
+	now_year = now_time.tm_year
+	now_mon = now_time.tm_mon
+	now_day = now_time.tm_mday
 
-	str_now = "%04d-%02d-%02d" % (year_now, mon_now, day_now)
+	str_now = "%04d-%02d-%02d" % (now_year, now_mon, now_day)
 
 	if not(os.path.isdir("C:\\Desktop\\data")):
 		os.makedirs(os.path.join("C:\\Desktop\\data"))
@@ -259,14 +259,14 @@ def checkTodo():
 
 
 	# get time
-	time_now = time.localtime(time.time())
+	now_time = time.localtime(time.time())
 
 	# set date
-	year_now = time_now.tm_year
-	mon_now = time_now.tm_mon
-	day_now = time_now.tm_mday
+	now_year = now_time.tm_year
+	now_mon = now_time.tm_mon
+	now_day = now_time.tm_mday
 
-	str_now = "%04d-%02d-%02d" % (year_now, mon_now, day_now)
+	str_now = "%04d-%02d-%02d" % (now_year, now_mon, now_day)
 
 	os.chdir("C:\\Desktop\\data\\" + str_now)
 	file = open("todo.txt", "r")
