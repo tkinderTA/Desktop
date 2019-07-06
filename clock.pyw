@@ -286,16 +286,13 @@ def threadParsing():
 	global time_parsing
 
 	while signal_play:
-		
+
 		time_parsing += 1
 
 		# according to period
 		if time_parsing == PERIOD_PARSING:
 			time_parsing = 0
 		
-			# save free memo
-			saveFree()
-
 			# update stock information
 			str_now = None
 			str_temp = None
@@ -496,6 +493,11 @@ def main():
 	thread_workers.append(thread_worker)
 
 	thread_worker = threading.Thread(target = threadMemo)
+	thread_worker.daemon = True
+	thread_worker.start()
+	thread_workers.append(thread_worker)
+
+	thread_worker = threading.Thread(target = threadParsing)
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
