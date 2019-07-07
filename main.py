@@ -35,13 +35,15 @@ MARGIN_TWO_BUTTON_Y = 5
 
 # size
 WIDTH_CHECK = 200
-WIDTH_FREE = 50
-HEIGHT_FREE = 10
+WIDTH_FREE = 52
+HEIGHT_FREE = 12
 WIDTH_TWO_BUTTON = 40
 
 # list unit
-UNIT_CHECK = 8
+UNIT_CHECK = 10
 
+# week
+DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
 
 """
 Load todo
@@ -260,6 +262,74 @@ def program(day):
 	label_stock = Label(frame_left, background = "white")
 	label_stock.pack(fill = BOTH, side = LEFT)
 
+	# calendar
+	frame_month = Frame(frame_right)
+
+	now_time = time.localtime(time.time())
+
+	now_year = now_time.tm_year
+	now_mon = now_time.tm_mon
+	now_day = now_time.tm_mday
+
+	button_pre = Button(frame_month, text = "◀")
+	button_pre.grid(row = 0, column = 0, pady = 5)
+
+	button_next = Button(frame_month, text = "▶")
+	button_next.grid(row = 0, column = 2, pady = 5)
+
+	label_calendar = Label(frame_month, text = "%04d년 %02d월" % (now_year, now_mon))
+	label_calendar.grid(row = 0, column = 1, padx = 10)
+
+	frame_month.pack()
+
+	frame_calendar = Frame(frame_right)
+
+	now_date = calendar.Calendar().monthdatescalendar(now_year, now_mon)
+
+	# To manage each day widget
+	list_weeks = []
+	widget_week = []
+	label_day = None
+	button_day = None
+	
+	for i in range(7):
+		label_day = Label(frame_calendar, text = DAY_WEEK[i])
+		label_day.grid(row = 0, column = i)
+		
+		if i == 5:
+			label_day["fg"] = "blue"
+		elif i == 6:
+			label_day["fg"] = "red"
+		
+		widget_week.append(label_day)
+	list_weeks.append(widget_week)
+
+	for i, week in enumerate(now_date):
+
+		widget_week = []
+
+		for j, date in enumerate(week):
+
+			if date.month != now_mon:
+				continue
+	
+			button_day = Button(frame_calendar, text = date.strftime("%d"), width = 6)
+			button_day.grid(row = i, column = j, padx = 1, pady = 1)
+		
+			if date.year == now_year and date.month == now_mon and date.day == now_day:
+				button_day["bg"] = "#aaa"
+			
+			if j == 5:
+				button_day["fg"] = "blue"
+			elif j == 6:
+				button_day["fg"] = "red"
+		
+			widget_week.append(button_day)
+		list_weeks.append(widget_week)
+
+	frame_calendar.pack()
+
+	# free memo
 	text_free = Text(frame_right, width = WIDTH_FREE, height = HEIGHT_FREE)
 	text_free.pack(fill = BOTH, side = LEFT)
 	scroll_free = Scrollbar(frame_right, command = text_free.yview)

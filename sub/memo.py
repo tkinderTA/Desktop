@@ -12,7 +12,7 @@ def saveFree(text):
 	shutil.copyfile("memo.txt", "memo.bak1")
 	
 	file = open("memo.txt", "w")
-	file.write(text)
+	file.write(text.strip())
 	file.close()
 
 	shutil.copyfile("memo.txt", "memo.bak2")

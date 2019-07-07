@@ -1,4 +1,5 @@
 ﻿import sys
+import time
 
 from tkinter import *
 
@@ -9,6 +10,9 @@ HIGH_ALPHA = 1
 
 # alpha (used at hide mode)
 alpha = HIGH_ALPHA
+
+# delay
+UNIT_DELAY = 0.5
 
 """
 Hide(semi) mode
@@ -32,8 +36,14 @@ def exitProgram(workers, play, free):
 
 	# exit daemon thread
 	play[0] = False
+
+	"""	
 	for worker in workers:
 		worker.join()
+
+	"""
+
+	time.sleep(2 * UNIT_DELAY)
 
 	print("bye")
 

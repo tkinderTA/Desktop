@@ -56,6 +56,8 @@ def threadTime(play, clock, date, start):
 		# wait
 		time.sleep(UNIT_DELAY)
 
+	print("time thread die")
+
 
 """
 Parsing thead
@@ -86,6 +88,7 @@ def threadParsing(play, stock):
 					else:
 						str_now = str_temp[6] + "%"
 					break
+
 			"""
 			if float(str_now[:-1]) > 0:
 				showinfo("알림", "hello")
@@ -102,12 +105,14 @@ def threadParsing(play, stock):
 					else:
 						str_now += " / " + str_temp[6] + "%"
 					break
-	
+
+			print(str_now, "str_now")
 			stock.configure(text = str_now)
 
 		# wait
 		time.sleep(UNIT_DELAY)
 
+	print("parsing thread die")
 
 """
 Memo thead
@@ -129,3 +134,5 @@ def threadMemo(play, free):
 		
 		# wait
 		time.sleep(UNIT_DELAY)
+
+	print("memo thread die")
