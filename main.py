@@ -2,44 +2,30 @@
 # modified by Jaejun Ha
 
 import time
-import math
 from tkinter import *
 from tkinter.font import *
 from tkinter.messagebox import *
-import requests
 import os
-import sys
 import calendar
 import threading
 
 from sub.memo import *
 from sub.system import *
+from sub.thread import *
+
 """
 Global variance
 """
-
 # todo width and height
 width_check = None
 height_check = None
 size_check = None
 
-# for exit signal
-signal_play = True
-
 """
 Constant
 """
-# time delay
-UNIT_DELAY = 0.5
-UNIT_MIN = 60
-PERIOD_PARSING = 10
-PERIOD_MEMO = 10
-
 # window location
 POS_WINDOW = "-0-40"
-
-# week day
-DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
 
 # margin
 MARGIN_FRAME_X = 5
@@ -177,25 +163,7 @@ def checkTodo():
 		file.write(content + "\n")
 	file.close()
 
-"""
-Exit program
-"""
-def exitProgram():
-	global signal_play
-	global thread_workers
-	global text_free
 
-	# exit daemon thread
-	signal_play = False
-	for worker in thread_workers:
-		worker.join()
-
-	print("bye")
-
-	# backup
-	saveFree(text_free.get("1.0", END))
-
-	sys.exit()
 
 """
 Reboot program
@@ -204,140 +172,16 @@ def rebootProgram():
 	print("rebooting...")
 
 
-"""
-Time thread
-"""
-def threadTime():
-	global signal_play
-	global label_date, label_time
-	global start
-
-	while signal_play:
-
-		# get time
-		now_time = time.localtime(time.time())
-
-		# set date label
-		now_year = now_time.tm_year
-		now_mon = now_time.tm_mon
-		now_day = now_time.tm_mday
-		now_week = now_time.tm_wday
-
-		str_now = "%04d-%02d-%02d %s" % (now_year, now_mon, now_day, (DAY_WEEK[now_week] + "요일"))
-
-		label_date.configure(text = str_now)
-	
-		# set time label
-		now_hour = now_time.tm_hour % 12
-		if now_hour == 0:
-			now_hour = 12
-		now_min = now_time.tm_min
-		now_sec = now_time.tm_sec
-	
-		if now_time.tm_hour >= 12:
-			str_now = "PM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
-		else:
-			str_now = "AM %02d:%02d:%02d" % (now_hour, now_min, now_sec)
-
-		label_time.configure(text = str_now)
-
-		# reboot program
-		if start != now_day:
-			rebootProgram()
-			start = now_day
-		
-		# wait
-		time.sleep(UNIT_DELAY)
-
-
-"""
-Parsing thead
-"""
-def threadParsing():
-	global signal_play
-	global label_stock
-	global time_parsing
-
-	while signal_play:
-
-		time_parsing += 1
-
-		# according to period
-		if time_parsing == PERIOD_PARSING:
-			time_parsing = 0
-		
-			# update stock information
-			str_now = None
-			str_temp = None
-			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
-			for line in http_res.text.split("\n"):
-				if "전일대비" in line:
-					str_temp = line.strip().split(' ')
-					if str_temp[5] == "플러스":
-						str_now = "+" + str_temp[6] + "%"
-					elif str_temp[5] == "마이너스":
-						str_now = "-" + str_temp[6] + "%"
-					else:
-						str_now = str_temp[6] + "%"
-					break
-			"""
-			if float(str_now[:-1]) > 0:
-				showinfo("알림", "hello")
-			"""	
-
-			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
-			for line in http_res.text.split("\n"):
-				if "전일대비" in line:
-					str_temp = line.strip().split(' ')
-					if str_temp[5] == "플러스":
-						str_now += " / +" + str_temp[6] + "%"
-					elif str_temp[5] == "마이너스":
-						str_now += " / -" + str_temp[6] + "%"
-					else:
-						str_now += " / " + str_temp[6] + "%"
-					break
-	
-			label_stock.configure(text = str_now)
-
-		# wait
-		time.sleep(UNIT_DELAY)
-
-
-"""
-Memo thead
-"""
-def threadMemo():
-	global signal_play
-	global time_memo
-	global text_free
-
-	while signal_play:
-		
-		time_memo += 1
-
-		# according to period
-		if time_memo == PERIOD_MEMO:
-			time_memo = 0
-		
-			# save free memo
-			saveFree(text_free.get("1.0", END))
-		
-		# wait
-		time.sleep(UNIT_DELAY)
-
 
 """
 Main function
 """
 def program(day):
-	global start
-	global window_main, label_time, label_date, label_stock, canvas_todo, text_free
+	global canvas_todo
 	global list_check, width_check, height_check, size_check
-	global thread_workers
-	global time_parsing, time_memo
 
 	# run time
-	start = day
+	day_start = [day]
 
 	loadTodo()
 
@@ -367,8 +211,8 @@ def program(day):
 	label_date = Label(frame_top, font = Font(family = "Sandoll 미생", size = 15), background = "white")
 	label_date.pack(fill = BOTH)
 
-	label_time = Label(frame_top, font = Font(family = "맑은 고딕", size = 20), background = "white")
-	label_time.pack(fill = BOTH)
+	label_clock = Label(frame_top, font = Font(family = "맑은 고딕", size = 20), background = "white")
+	label_clock.pack(fill = BOTH)
 
 	label_todo = Label(frame_left, text = "\n- 할일 -", anchor = W, background = "white")
 	label_todo.pack(fill = BOTH)
@@ -425,35 +269,34 @@ def program(day):
 	# load memo, don't change this code location
 	loadFree(text_free)
 
-	button_alpha = Button(frame_bottom, command = lambda: hideWindow(window_main), text = "Hide", width = WIDTH_TWO_BUTTON)
-	button_alpha.pack(fill = BOTH, side = LEFT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
-
-	button_exit = Button(frame_bottom, command = exitProgram, text = "Exit", width = WIDTH_TWO_BUTTON)
-	button_exit.pack(fill = BOTH, side = RIGHT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
-	
-	# for rebooting
+	# for rebooting, don't change this code location
 	try:
 		if len(thread_workers) > 0:
 			del(thread_workers)
 			thread_workers = []
 	except NameError:
 		thread_workers = []
+	signal_play = [True]
+
+	button_alpha = Button(frame_bottom, command = lambda: hideWindow(window_main), text = "Hide", width = WIDTH_TWO_BUTTON)
+	button_alpha.pack(fill = BOTH, side = LEFT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
+
+	button_exit = Button(frame_bottom, command = lambda: exitProgram(thread_workers, signal_play, text_free), text = "Exit", width = WIDTH_TWO_BUTTON)
+	button_exit.pack(fill = BOTH, side = RIGHT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
 
 	# make threads
-	time_parsing = PERIOD_PARSING - 1
-	time_memo = PERIOD_MEMO - 1
 
-	thread_worker = threading.Thread(target = threadTime)
+	thread_worker = threading.Thread(target = threadTime, args = (signal_play, label_clock, label_date, day_start))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
 
-	thread_worker = threading.Thread(target = threadMemo)
+	thread_worker = threading.Thread(target = threadMemo, args = (signal_play, text_free))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
 
-	thread_worker = threading.Thread(target = threadParsing)
+	thread_worker = threading.Thread(target = threadParsing, args = (signal_play, label_stock))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
