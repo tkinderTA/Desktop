@@ -11,6 +11,7 @@ import os
 import sys
 import calendar
 import threading
+import shutil
 
 """
 Global variance
@@ -123,10 +124,14 @@ def saveFree():
 	global text_free
 
 	os.chdir("C:\\Desktop")
+	
+	shutil.copyfile("memo.txt", "memo.bak1")
+	
 	file = open("memo.txt", "w")
 	file.write(text_free.get("1.0", END))
 	file.close()
 
+	shutil.copyfile("memo.txt", "memo.bak2")
 
 """
 Load free memo
