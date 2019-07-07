@@ -42,6 +42,21 @@ POS_WINDOW = "-0-40"
 # week day
 DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
 
+# margin
+MARGIN_FRAME_X = 5
+MARGIN_CHECK_X = 10
+MARGIN_TWO_BUTTON_X = 20
+MARGIN_TWO_BUTTON_Y = 5
+
+# size
+WIDTH_CHECK = 200
+WIDTH_FREE = 50
+HEIGHT_FREE = 10
+WIDTH_TWO_BUTTON = 40
+
+# list unit
+UNIT_CHECK = 8
+
 """
 Hide(semi) mode
 """
@@ -384,46 +399,35 @@ def main():
 	frame_top = Frame(window_main)
 	frame_top.grid(row = 0, columnspan = 2)
 
-	frame_left = Frame(window_main)
-	frame_left.grid(row = 1, column = 0, padx = 5)
-	frame_left.configure(background = "white")
+	frame_left = Frame(window_main, background = "white")
+	frame_left.grid(row = 1, column = 0, padx = MARGIN_FRAME_X)
 
 	frame_right = Frame(window_main)
-	frame_right.grid(row = 1, column = 1, padx = 5)
+	frame_right.grid(row = 1, column = 1, padx = MARGIN_FRAME_X)
 
-	frame_bottom = Frame(window_main)
+	frame_bottom = Frame(window_main, background = "white")
 	frame_bottom.grid(row = 2, columnspan = 2)
 
-	label_date = Label(frame_top)
-	label_date.configure(background = "white")
-	label_date.configure(font = Font(family = "Sandoll 미생", size = 15))
+	label_date = Label(frame_top, font = Font(family = "Sandoll 미생", size = 15), background = "white")
 	label_date.pack(fill = BOTH)
 
-	label_time = Label(frame_top)
-	label_time.configure(background = "white")
-	label_time.configure(font = Font(family = "맑은 고딕", size = 20))
+	label_time = Label(frame_top, font = Font(family = "맑은 고딕", size = 20), background = "white")
 	label_time.pack(fill = BOTH)
 
-	label_todo = Label(frame_left)
-	label_todo.configure(background = "white")
-	label_todo.configure(anchor = W)
-	label_todo.configure(text = "\n- 할일 -")
+	label_todo = Label(frame_left, text = "\n- 할일 -", anchor = W, background = "white")
 	label_todo.pack(fill = BOTH)
 
-	frame_todo = Frame(frame_left)
+	frame_todo = Frame(frame_left, background = "white")
 	frame_todo.pack(fill = X)
-	frame_todo.configure(background = "white")
 
 	canvas_todo = Canvas(frame_todo, width = 1, height = 1)
 	canvas_todo.pack(fill = BOTH, side = LEFT, expand = True)
-	scroll_todo = Scrollbar(frame_todo, command = canvas_todo.yview)
+	scroll_todo = Scrollbar(frame_todo, command = canvas_todo.yview, background = "white")
 	canvas_todo.configure(yscrollcommand = scroll_todo.set)
 	scroll_todo.pack(fill = Y, side = RIGHT)
-	scroll_todo.configure(background = "white")
 
-	frame_check = Frame(canvas_todo)
-	canvas_todo.create_window(0, 0, window = frame_check, anchor = "nw")
-	frame_check.configure(background = "white")
+	frame_check = Frame(canvas_todo, background = "white")
+	canvas_todo.create_window(0, 0, window = frame_check, anchor = NW)
 
 	# for rebooting
 	try:
@@ -439,10 +443,7 @@ def main():
 	for item in list_todo:
 		size_check += 1
 		check_var = IntVar()
-		check_todo = tkinter.Checkbutton(frame_check, text = item, command = checkTodo, variable = check_var)
-		check_todo.configure(background = "white")
-		check_todo.configure(font = Font(family = "Sandoll 미생", size = 15))
-		check_todo.configure(anchor = W)
+		check_todo = tkinter.Checkbutton(frame_check, text = item, command = checkTodo, variable = check_var, font = Font(family = "Sandoll 미생", size = 15), background = "white", anchor = W)
 		check_todo.pack(fill = BOTH)
 		list_check.append((check_todo, check_var))
 	
@@ -450,19 +451,16 @@ def main():
 		check_todo.update()
 		width_check = check_todo.winfo_width()
 		height_check = check_todo.winfo_height()
-		if width_check < 200:
-			canvas_todo.configure(width = 200)
+		if width_check < WIDTH_CHECK:
+			canvas_todo.configure(width = WIDTH_CHECK)
 		else:
-			canvas_todo.configure(width = (width_check + 10))
-		canvas_todo.configure(height = (height_check * 8))
-		canvas_todo.configure(background = "white")
-		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * len(list_todo)))
+			canvas_todo.configure(width = (width_check + MARGIN_CHECK_X))
+		canvas_todo.configure(height = (height_check * UNIT_CHECK), scrollregion = (0, 0, width_check, height_check * len(list_todo)), background = "white")
 
-	label_stock = Label(frame_left)
-	label_stock.configure(background = "white")
+	label_stock = Label(frame_left, background = "white")
 	label_stock.pack(fill = BOTH, side = LEFT)
 
-	text_free = Text(frame_right, width = 50, height = 10)
+	text_free = Text(frame_right, width = WIDTH_FREE, height = HEIGHT_FREE)
 	text_free.pack(fill = BOTH, side = LEFT)
 	scroll_free = Scrollbar(frame_right, command = text_free.yview)
 	text_free.configure(yscrollcommand = scroll_free.set)
@@ -471,15 +469,11 @@ def main():
 	# load memo, don't change this code location
 	loadFree()
 
-	button_exit = Button(frame_bottom, command = exitProgram, text = "Exit")
-	button_exit.pack(fill = BOTH)
+	button_alpha = Button(frame_bottom, command = hideWindow, text = "Hide", width = WIDTH_TWO_BUTTON)
+	button_alpha.pack(fill = BOTH, side = LEFT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
 
-	button_alpha = Button(frame_bottom, command = hideWindow, text = "Hide")
-	button_alpha.pack(fill = BOTH)
-
-	# resize button size
-	width_top = window_main.winfo_width()
-	button_exit.configure(width = (width_top + 20))
+	button_exit = Button(frame_bottom, command = exitProgram, text = "Exit", width = WIDTH_TWO_BUTTON)
+	button_exit.pack(fill = BOTH, side = RIGHT, padx = MARGIN_TWO_BUTTON_X, pady = MARGIN_TWO_BUTTON_Y)
 	
 	# for rebooting
 	try:
