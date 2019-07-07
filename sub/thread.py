@@ -63,6 +63,11 @@ def threadTime(play, clock, date, start):
 Parsing thead
 """
 def threadParsing(play, stock):
+	global data_stock
+	data_stock = {}
+
+	data_stock["069500"] = {}
+	data_stock["229200"] = {}
 
 	unit = PERIOD_PARSING - 1
 
@@ -75,39 +80,34 @@ def threadParsing(play, stock):
 			unit = 0
 		
 			# update stock information
-			str_now = None
 			str_temp = None
-			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=069500")
-			for line in http_res.text.split("\n"):
-				if "전일대비" in line:
-					str_temp = line.strip().split(' ')
-					if str_temp[5] == "플러스":
-						str_now = "+" + str_temp[6] + "%"
-					elif str_temp[5] == "마이너스":
-						str_now = "-" + str_temp[6] + "%"
-					else:
-						str_now = str_temp[6] + "%"
-					break
+			for code in data_stock:
+				http_res = requests.get("https://finance.naver.com/item/main.nhn?code=" + code)
+				for line in http_res.text.split("\n"):
+					if "<dd>종목명" in line:
+						data_stock[code]["name"] = line.strip()[8:-5]
+					elif "현재가" in line:
+						str_temp = line.strip().split(" ")
+						data_stock[code]["cost"] = str_temp[1].replace(",", "")
+						if str_temp[5] == "마이너스":
+							data_stock[code]["change"] = -int(str_temp[4])
+							data_stock[code]["percent"] = -float(str_temp[6])
+						else:
+							data_stock[code]["change"] = int(str_temp[4])
+							data_stock[code]["percent"] = float(str_temp[6])
+						break
 
 			"""
 			if float(str_now[:-1]) > 0:
 				showinfo("알림", "hello")
 			"""	
 
-			http_res = requests.get("https://finance.naver.com/item/main.nhn?code=229200")
-			for line in http_res.text.split("\n"):
-				if "전일대비" in line:
-					str_temp = line.strip().split(' ')
-					if str_temp[5] == "플러스":
-						str_now += " / +" + str_temp[6] + "%"
-					elif str_temp[5] == "마이너스":
-						str_now += " / -" + str_temp[6] + "%"
-					else:
-						str_now += " / " + str_temp[6] + "%"
-					break
+			str_now = ""
+			for code in data_stock:
+				str_now += str(data_stock[code]["change"]) + "% / "
+			#	print(data_stock[code]["name"], data_stock[code]["cost"], data_stock[code]["change"], data_stock[code]["percent"])
 
-			print(str_now, "str_now")
-			stock.configure(text = str_now)
+			stock.configure(text = str_now[:-3])
 
 		# wait
 		time.sleep(UNIT_DELAY)
