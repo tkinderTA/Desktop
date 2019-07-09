@@ -3,7 +3,6 @@
 
 from tendo import singleton
 from main import *
-import time
 
 """
 Start application
@@ -16,4 +15,4 @@ if __name__ ==  "__main__":
 
 	print("hello")
 
-	program(time.localtime(time.time()).tm_mday)
+	program()

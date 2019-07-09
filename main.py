@@ -12,6 +12,7 @@ import threading
 from sub.memo import *
 from sub.system import *
 from sub.thread import *
+from sub.todo import *
 
 """
 Global variance
@@ -34,137 +35,12 @@ MARGIN_TWO_BUTTON_X = 20
 MARGIN_TWO_BUTTON_Y = 5
 
 # size
-WIDTH_CHECK = 200
 WIDTH_FREE = 52
 HEIGHT_FREE = 12
 WIDTH_TWO_BUTTON = 40
 
-# list unit
-UNIT_CHECK = 10
-
 # week
 DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
-
-"""
-Load todo
-"""
-def loadTodo():
-	global list_todo
-
-	# for rebooting
-	try:
-		if len(list_todo) > 0:
-			del(list_todo)
-			list_todo = []	
-	except:
-		list_todo = []
-
-	if not(os.path.isdir("C:\\Desktop")):
-		os.makedirs(os.path.join("C:\\Desktop"))
-
-	# get time
-	now_time = time.localtime(time.time())
-
-	# set date
-	now_year = now_time.tm_year
-	now_mon = now_time.tm_mon
-	now_day = now_time.tm_mday
-
-	str_now = "%04d-%02d-%02d" % (now_year, now_mon, now_day)
-
-	if not(os.path.isdir("C:\\Desktop\\data")):
-		os.makedirs(os.path.join("C:\\Desktop\\data"))
-
-	# load todo data
-	os.chdir("C:\\Desktop\\data")
-	if not(os.path.isdir(str_now)):
-		os.makedirs(os.path.join(str_now))
-		os.chdir("C:\\Desktop")
-		try:
-			file = open("list.txt", "r")
-			for line in file.readlines():
-				list_todo.append(line.strip())
-			file.close()
-		except FileNotFoundError:
-			list_todo = []
-
-		os.chdir("C:\\Desktop\\data\\" + str_now)
-		file = open("todo.txt", "w")
-		for item in list_todo:
-			file.write(item + "\\" + "no\n")
-		file.close()
-		
-	else:
-		os.chdir("C:\\Desktop\\data\\" + str_now)
-
-		file = open("todo.txt", "r")
-		for item in file.readlines():
-			if item.split("\\")[1].strip() == "no":
-				list_todo.append(item.split("\\")[0])
-		file.close()
-
-
-"""
-Todo event
-"""
-def checkTodo():
-	global canvas_todo
-	global list_todo
-	global list_check, width_check, height_check, size_check
-	
-	
-	# ask question
-	result = askquestion("질문", "정말 완료하셨습니까?")
-
-	# if no
-	if result == "no":
-		for i in range(len(list_todo)):
-			if list_check[i][1].get() == 1:
-				list_check[i][0].deselect()
-				break
-		return
-
-	# else
-	index = None
-	for i in range(len(list_todo)):
-		if list_check[i][1].get() == 1:
-			list_check[i][0].deselect()
-			index = i
-			break
-	
-	list_check[index][0].destroy()
-	size_check -= 1
-	if size_check is not None:
-		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * size_check))
-
-
-	# get time
-	now_time = time.localtime(time.time())
-
-	# set date
-	now_year = now_time.tm_year
-	now_mon = now_time.tm_mon
-	now_day = now_time.tm_mday
-
-	str_now = "%04d-%02d-%02d" % (now_year, now_mon, now_day)
-
-	os.chdir("C:\\Desktop\\data\\" + str_now)
-	file = open("todo.txt", "r")
-
-	list_content = []	
-	str = None
-	for line in file.readlines():
-		str = line.strip()
-		if str.split("\\")[0] == list_todo[index]:
-			str = list_todo[index] + "\\" + "ok"
-		list_content.append(str)
-	file.close()	
-
-	file = open("todo.txt", "w")
-	for content in list_content:
-		file.write(content + "\n")
-	file.close()
-
 
 
 """
@@ -178,14 +54,10 @@ def rebootProgram():
 """
 Main function
 """
-def program(day):
+def program():
 	global canvas_todo
 	global list_check, width_check, height_check, size_check
 
-	# run time
-	day_start = [day]
-
-	loadTodo()
 
 	window_main = Tk()
 	window_main.configure(background = "white")
@@ -216,6 +88,9 @@ def program(day):
 	label_clock = Label(frame_top, font = Font(family = "맑은 고딕", size = 20), background = "white")
 	label_clock.pack(fill = BOTH)
 
+	list_todo = loadTodo()
+
+	# todo
 	label_todo = Label(frame_left, text = "\n- 할일 -", anchor = W, background = "white")
 	label_todo.pack(fill = BOTH)
 
@@ -231,34 +106,7 @@ def program(day):
 	frame_check = Frame(canvas_todo, background = "white")
 	canvas_todo.create_window(0, 0, window = frame_check, anchor = NW)
 
-	# for rebooting
-	try:
-		if len(list_check) > 0:
-			del(list_check)
-			list_check = []
-	except NameError:
-		list_check = []
-
-	check_todo = None
-	check_var = None
-	size_check = 0
-	for item in list_todo:
-		size_check += 1
-		check_var = IntVar()
-		check_todo = tkinter.Checkbutton(frame_check, text = item, command = checkTodo, variable = check_var, font = Font(family = "Sandoll 미생", size = 15), background = "white", anchor = W)
-		check_todo.pack(fill = BOTH)
-		list_check.append((check_todo, check_var))
-	
-	if check_todo is not None:
-		check_todo.update()
-		width_check = check_todo.winfo_width()
-		height_check = check_todo.winfo_height()
-		if width_check < WIDTH_CHECK:
-			canvas_todo.configure(width = WIDTH_CHECK)
-		else:
-			canvas_todo.configure(width = (width_check + MARGIN_CHECK_X))
-		canvas_todo.configure(height = (height_check * UNIT_CHECK), scrollregion = (0, 0, width_check, height_check * len(list_todo)), background = "white")
-
+	# stock
 	label_stock = Label(frame_left, background = "white")
 	label_stock.pack(fill = BOTH, side = LEFT)
 
@@ -339,13 +187,7 @@ def program(day):
 	# load memo, don't change this code location
 	loadFree(text_free)
 
-	# for rebooting, don't change this code location
-	try:
-		if len(thread_workers) > 0:
-			del(thread_workers)
-			thread_workers = []
-	except NameError:
-		thread_workers = []
+	thread_workers = []
 	signal_play = [True]
 
 	button_alpha = Button(frame_bottom, command = lambda: hideWindow(window_main), text = "Hide", width = WIDTH_TWO_BUTTON)
@@ -356,7 +198,7 @@ def program(day):
 
 	# make threads
 
-	thread_worker = threading.Thread(target = threadTime, args = (signal_play, label_clock, label_date, day_start))
+	thread_worker = threading.Thread(target = threadTime, args = (signal_play, label_clock, label_date))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
@@ -366,9 +208,16 @@ def program(day):
 	thread_worker.start()
 	thread_workers.append(thread_worker)
 
+	thread_worker = threading.Thread(target = threadUpdate, args = (signal_play, canvas_todo, frame_check))
+	thread_worker.daemon = True
+	thread_worker.start()
+	thread_workers.append(thread_worker)
+
+	"""
 	thread_worker = threading.Thread(target = threadParsing, args = (signal_play, label_stock))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
+	"""
 
 	window_main.mainloop()
