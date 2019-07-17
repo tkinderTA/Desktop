@@ -6,6 +6,7 @@ from tkinter.font import *
 
 from sub.memo import *
 from sub.todo import *
+from sub.calendar import *
 
 # for call by reference
 FOR_REF = 0
@@ -23,6 +24,8 @@ UNIT_CHECK = 10
 
 # week day
 DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
+DAY_SAT = 5
+DAY_SUN = 6
 
 """
 Time thread
@@ -91,7 +94,7 @@ def threadMemo(play, free):
 """
 Update thread
 """
-def threadUpdate(play, canvas_todo, frame_check):
+def threadUpdate(play, canvas_todo, frame_check, label_calendar, frame_calendar):
 
 	unit = PERIOD_UPDATE - 1
 	start_day = -1
@@ -104,11 +107,15 @@ def threadUpdate(play, canvas_todo, frame_check):
 		if unit == PERIOD_UPDATE:
 			unit = 0
 		
-			now_day = time.localtime(time.time()).tm_mday
-			# update things
+			now_time = time.localtime(time.time())
+			now_day = now_time.tm_mday
 
+			# update things
 			if start_day != now_day:
 
+				"""
+				Todo
+				"""
 				# Refresh todo function
 				list_todo = loadTodo()
 
@@ -137,6 +144,13 @@ def threadUpdate(play, canvas_todo, frame_check):
 						canvas_todo.configure(width = (width_check + MARGIN_CHECK_X))
 					canvas_todo.configure(height = (height_check * UNIT_CHECK), scrollregion = (0, 0, width_check, height_check * len(list_todo)), background = "white")
 				
+				"""
+				Calendar
+				"""	
+				now_year = now_time.tm_year
+				now_mon = now_time.tm_mon
+				updateCalendar(now_year, now_mon, now_day, label_calendar, frame_calendar)
+
 				# update date
 				start_day = now_day
 		

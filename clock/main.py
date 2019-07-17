@@ -6,7 +6,6 @@ from tkinter import *
 from tkinter.font import *
 from tkinter.messagebox import *
 import os
-import calendar
 import threading
 
 from sub.memo import *
@@ -112,56 +111,12 @@ def program():
 	button_next = Button(frame_month, text = "▶")
 	button_next.grid(row = 0, column = 2, pady = 5)
 
-	label_calendar = Label(frame_month, text = "%04d년 %02d월" % (now_year, now_mon))
+	label_calendar = Label(frame_month)
 	label_calendar.grid(row = 0, column = 1, padx = 10)
 
 	frame_month.pack()
 
-	frame_calendar = Frame(frame_right)
-
-	now_date = calendar.Calendar().monthdatescalendar(now_year, now_mon)
-
-	# To manage each day widget
-	list_weeks = []
-	widget_week = []
-	label_day = None
-	button_day = None
-	
-	for i in range(7):
-		label_day = Label(frame_calendar, text = DAY_WEEK[i])
-		label_day.grid(row = 0, column = i)
-		
-		if i == 5:
-			label_day["fg"] = "blue"
-		elif i == 6:
-			label_day["fg"] = "red"
-		
-		widget_week.append(label_day)
-	list_weeks.append(widget_week)
-
-	for i, week in enumerate(now_date):
-
-		widget_week = []
-
-		for j, date in enumerate(week):
-
-			if date.month != now_mon:
-				continue
-	
-			button_day = Button(frame_calendar, text = date.strftime("%d"), width = 6)
-			button_day.grid(row = i, column = j, padx = 1, pady = 1)
-		
-			if date.year == now_year and date.month == now_mon and date.day == now_day:
-				button_day["bg"] = "#aaa"
-			
-			if j == 5:
-				button_day["fg"] = "blue"
-			elif j == 6:
-				button_day["fg"] = "red"
-		
-			widget_week.append(button_day)
-		list_weeks.append(widget_week)
-
+	frame_calendar = Frame(frame_right)	
 	frame_calendar.pack()
 
 	# free memo
@@ -195,7 +150,7 @@ def program():
 	thread_worker.start()
 	thread_workers.append(thread_worker)
 
-	thread_worker = threading.Thread(target = threadUpdate, args = (signal_play, canvas_todo, frame_check))
+	thread_worker = threading.Thread(target = threadUpdate, args = (signal_play, canvas_todo, frame_check, label_calendar, frame_calendar))
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
