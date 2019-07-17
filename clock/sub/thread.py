@@ -116,6 +116,10 @@ def threadUpdate(play, canvas_todo, frame_check):
 				size_check = [0]
 				list_check = []
 
+				# Remove previous check widget
+				for item in frame_check.winfo_children():
+					item.destroy()
+
 				for item in list_todo:
 					size_check[FOR_REF] += 1
 					check_var = IntVar()

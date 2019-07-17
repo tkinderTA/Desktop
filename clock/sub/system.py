@@ -11,9 +11,6 @@ HIGH_ALPHA = 1
 # alpha (used at hide mode)
 alpha = HIGH_ALPHA
 
-# delay
-UNIT_DELAY = 0.5
-
 """
 Hide(semi) mode
 """
@@ -37,7 +34,8 @@ def exitProgram(workers, play, free):
 	# exit daemon thread
 	play[0] = False
 
-	time.sleep(2 * UNIT_DELAY)
+	for worker in workers:
+		worker.join()
 
 	print("bye")
 

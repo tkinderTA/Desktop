@@ -90,9 +90,9 @@ def checkTodo(canvas_todo, list_todo, list_check, size_check):
 	size_check[FOR_REF] -= 1
 
 	if size_check[FOR_REF] > 0:
-		list_check[0][0].update()
-		width_check = list_check[0][0].winfo_width()
-		height_check = list_check[0][0].winfo_height()
+		list_check[index][0].update()
+		width_check = list_check[index][0].winfo_width()
+		height_check = list_check[index][0].winfo_height()
 		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * size_check[FOR_REF]))
 
 	# don't change this position
