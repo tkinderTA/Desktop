@@ -64,12 +64,16 @@ Todo event
 """
 def checkTodo(canvas_todo, list_todo, list_check, size_check):
 	
+	# don't delete this code
+	length = len(list_todo)
+	list_todo
+
 	# ask question
 	result = askquestion("질문", "정말 완료하셨습니까?")
 
 	# if no
 	if result == "no":
-		for i in range(len(list_todo)):
+		for i in range(length):
 			if list_check[i][1].get() == 1:
 				list_check[i][0].deselect()
 				break
@@ -77,19 +81,22 @@ def checkTodo(canvas_todo, list_todo, list_check, size_check):
 
 	# else
 	index = None
-	for i in range(len(list_todo)):
+	for i in range(length):
 		if list_check[i][1].get() == 1:
 			list_check[i][0].deselect()
 			index = i
 			break
 	
-	list_check[index][0].destroy()
 	size_check[FOR_REF] -= 1
+
 	if size_check[FOR_REF] > 0:
 		list_check[0][0].update()
 		width_check = list_check[0][0].winfo_width()
 		height_check = list_check[0][0].winfo_height()
 		canvas_todo.configure(scrollregion = (0, 0, width_check, height_check * size_check[FOR_REF]))
+
+	# don't change this position
+	list_check[index][0].destroy()
 
 
 	# get time

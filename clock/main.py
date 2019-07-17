@@ -42,15 +42,6 @@ WIDTH_TWO_BUTTON = 40
 # week
 DAY_WEEK = ["월", "화", "수", "목", "금", "토", "일"]
 
-
-"""
-Reboot program
-"""
-def rebootProgram():
-	print("rebooting...")
-
-
-
 """
 Main function
 """
@@ -105,10 +96,6 @@ def program():
 
 	frame_check = Frame(canvas_todo, background = "white")
 	canvas_todo.create_window(0, 0, window = frame_check, anchor = NW)
-
-	# stock
-	label_stock = Label(frame_left, background = "white")
-	label_stock.pack(fill = BOTH, side = LEFT)
 
 	# calendar
 	frame_month = Frame(frame_right)
@@ -212,12 +199,5 @@ def program():
 	thread_worker.daemon = True
 	thread_worker.start()
 	thread_workers.append(thread_worker)
-
-	"""
-	thread_worker = threading.Thread(target = threadParsing, args = (signal_play, label_stock))
-	thread_worker.daemon = True
-	thread_worker.start()
-	thread_workers.append(thread_worker)
-	"""
 
 	window_main.mainloop()

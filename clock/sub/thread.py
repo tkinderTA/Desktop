@@ -14,7 +14,6 @@ FOR_REF = 0
 UNIT_DELAY = 0.5
 PERIOD_MEMO = 10
 PERIOD_UPDATE = 60
-PERIOD_PARSING = 10
 
 # check width
 WIDTH_CHECK = 200
@@ -141,60 +140,3 @@ def threadUpdate(play, canvas_todo, frame_check):
 		time.sleep(UNIT_DELAY)
 
 	print("update thread die")
-
-"""
-Parsing thead
-"""
-def threadParsing(play, stock):
-	global data_stock
-	data_stock = {}
-
-	"""
-	data_stock["233740"] = {}
-	"""
-
-	unit = PERIOD_PARSING - 1
-
-
-	while play[FOR_REF]:
-
-		unit += 1
-
-		# according to period
-		if unit == PERIOD_PARSING:
-			unit = 0
-		
-			# update stock information
-			str_temp = None
-			"""
-			for code in data_stock:
-				http_res = requests.get("https://finance.naver.com/item/main.nhn?code=" + code)
-				for line in http_res.text.split("\n"):
-					if "<dd>종목명" in line:
-						data_stock[code]["name"] = line.strip()[8:-5]
-					elif "현재가" in line:
-						str_temp = line.strip().split(" ")
-						data_stock[code]["cost"] = int(str_temp[1].replace(",", ""))
-						if str_temp[5] == "마이너스":
-							data_stock[code]["change"] = -int(str_temp[4].replace(",", ""))
-							data_stock[code]["percent"] = -float(str_temp[6])
-						else:
-							data_stock[code]["change"] = int(str_temp[4].replace(",", ""))
-							data_stock[code]["percent"] = float(str_temp[6])
-						break
-
-			
-			if data_stock["233160"]["percent"] > 1:
-				showinfo("알림", data_stock["233160"]["name"])
-		
-			str_now = ""
-			
-			for i, code in enumerate(data_stock):
-				str_now += str(data_stock[code]["percent"]) + "% / "	
-			stock.configure(text = str_now[:-3])
-			"""
-
-		# wait
-		time.sleep(UNIT_DELAY)
-
-	print("parsing thread die")
