@@ -31,3 +31,7 @@ def loadFree(free):
 		file.close()
 	except NameError:
 		return
+	except FileNotFoundError:
+		file = open("memo.txt", "w")
+		file.close()
+		return 
