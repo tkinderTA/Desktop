@@ -2,6 +2,7 @@ from win32api import GetMonitorInfo, MonitorFromPoint
 from tkinter import *
 from tkinter.ttk import *
 import sys
+import requests
 
 WIDTH_WINDOW = None
 HEIGHT_WINDOW = None
@@ -66,6 +67,36 @@ class Window(Frame):
 				self.master.update()
 				self.master.deiconify()
 				button_activation.configure(text = "-")
+
+				# 나중에 함수화하기
+				file = open("goal.csv", "r", encoding = "utf-8")
+				dic_item = {}
+				list_sort = []
+				for i, line in enumerate(file.readlines()):
+					if i == 0:
+						continue
+					list_line = line.split(",")
+					name = list_line[0].strip()
+					code = list_line[1].strip()
+					goal = int(list_line[2].strip())
+					weight = list_line[3].strip()
+					dic_item[name] = {"name": name, "code": code, "goal": goal, "weight": weight}
+					res = requests.get("https://finance.naver.com/item/main.nhn?code=" + code)
+					for line in res.text.split("\n"):
+						if "저가" in line:
+							price = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
+							dic_item[name]["price"] = price
+							diff = 100.0 * (goal - price) / price
+							list_sort.append((diff, name))
+							break
+				list_sort.sort(reverse = True)
+				print("%s(%%)\t%s\t%s\t%s" % ("차이", "이름".ljust(10), "저가", "목표가"))
+				for item in list_sort:
+					name = item[1]
+					print("%.2f%%\t%s\t%s\t%s" % (item[0], name.ljust(10), dic_item[name]["price"], dic_item[name]["goal"]))
+				# 나중에 함수화하기
+
+
 		button_activation = Button(window_controller, text = "+", width = 5, command = activateWindow)
 		button_activation.pack(side = LEFT)
 
