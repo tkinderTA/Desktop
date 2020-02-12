@@ -29,10 +29,32 @@ class Window(Frame):
 		# 초기에는 비 활성화
 		self.master.withdraw()
 	
-		controller = Toplevel()
-		controller.attributes("-topmost", True)
-		controller.overrideredirect(True)
+		window_controller = Toplevel()
+		window_controller.attributes("-topmost", True)
+		window_controller.overrideredirect(True)
 
+		"""
+		몰래 보기
+		"""
+		self.window_peek = Toplevel()
+		self.window_peek.attributes("-topmost", True)
+		self.window_peek.overrideredirect(True)
+		self.window_peek.withdraw()
+		self.bool_peek = False
+		def peekPrice():
+			if self.bool_peek:
+				self.bool_peek = False
+				self.window_peek.withdraw()
+			else:
+				self.bool_peek = True
+				self.window_peek.update()
+				self.window_peek.deiconify()
+		button_peek = Button(window_controller, text = "/", width = 5, command = peekPrice)
+		button_peek.pack(side = LEFT)
+
+		"""
+		메인 활성화
+		"""
 		self.bool_activation = False
 		def activateWindow():
 			if self.bool_activation:
@@ -44,17 +66,20 @@ class Window(Frame):
 				self.master.update()
 				self.master.deiconify()
 				button_activation.configure(text = "-")
-		button_activation = Button(controller, text = "+", command = activateWindow)
+		button_activation = Button(window_controller, text = "+", width = 5, command = activateWindow)
 		button_activation.pack(side = LEFT)
 
+		"""
+		종료
+		"""
 		def exitProgram():
 			sys.exit()
-		button_exit = Button(controller, text = "x", command = exitProgram)
+		button_exit = Button(window_controller, text = "x", width = 5, command = exitProgram)
 		button_exit.pack(side = LEFT)
 
 		# 아래 코드 순서 변경하지 말기
-		controller.update()
-		controller.geometry("+%d+%d" % ( WIDTH_WINDOW - controller.winfo_width(), HEIGHT_WINDOW - controller.winfo_height()))
+		window_controller.update()
+		window_controller.geometry("+%d+%d" % ( WIDTH_WINDOW - window_controller.winfo_width(), HEIGHT_WINDOW - window_controller.winfo_height()))
 		# 위 코드 순서 변경하지 말기
 
 def getWindowSize():
