@@ -56,6 +56,7 @@ class Window(Frame):
 		"""
 		메인 활성화
 		"""
+		self.makeListGoal()
 		self.bool_activation = False
 		def activateWindow():
 			if self.bool_activation:
@@ -69,31 +70,20 @@ class Window(Frame):
 				button_activation.configure(text = "-")
 
 				# 나중에 함수화하기
-				file = open("goal.csv", "r", encoding = "utf-8")
-				dic_item = {}
 				list_sort = []
-				for i, line in enumerate(file.readlines()):
-					if i == 0:
-						continue
-					list_line = line.split(",")
-					name = list_line[0].strip()
-					code = list_line[1].strip()
-					goal = int(list_line[2].strip())
-					weight = list_line[3].strip()
-					dic_item[name] = {"name": name, "code": code, "goal": goal, "weight": weight}
-					res = requests.get("https://finance.naver.com/item/main.nhn?code=" + code)
+				for item in self.dic_item:
+					res = requests.get("https://finance.naver.com/item/main.nhn?code=" + self.dic_item[item]["code"])
 					for line in res.text.split("\n"):
 						if "저가" in line:
 							price = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
-							dic_item[name]["price"] = price
-							diff = 100.0 * (goal - price) / price
-							list_sort.append((diff, name))
+							self.dic_item[item]["price"] = price
+							diff = 100.0 * (self.dic_item[item]["goal"] - price) / price
+							list_sort.append((diff, item))
 							break
 				list_sort.sort(reverse = True)
-				print("%s(%%)\t%s\t%s\t%s" % ("차이", "이름".ljust(10), "저가", "목표가"))
-				for item in list_sort:
+				for i, item in enumerate(list_sort):
 					name = item[1]
-					print("%.2f%%\t%s\t%s\t%s" % (item[0], name.ljust(10), dic_item[name]["price"], dic_item[name]["goal"]))
+					self.list_label_goal[i].configure(text = ("%.2f%%\t%s\t%s\t%s" % (item[0], name.ljust(10), self.dic_item[name]["price"], self.dic_item[name]["goal"])))
 				# 나중에 함수화하기
 
 
@@ -106,12 +96,33 @@ class Window(Frame):
 		def exitProgram():
 			sys.exit()
 		button_exit = Button(window_controller, text = "x", width = 5, command = exitProgram)
-		button_exit.pack(side = LEFT)
+		button_exit.pack()
 
 		# 아래 코드 순서 변경하지 말기
 		window_controller.update()
 		window_controller.geometry("+%d+%d" % ( WIDTH_WINDOW - window_controller.winfo_width(), HEIGHT_WINDOW - window_controller.winfo_height()))
 		# 위 코드 순서 변경하지 말기
+	
+	def makeListGoal(self):
+		file = open("goal.csv", "r", encoding = "utf-8")
+		self.dic_item = {}
+		for i, line in enumerate(file.readlines()):
+			if i == 0:
+				continue
+			list_line = line.split(",")
+			name = list_line[0].strip()
+			code = list_line[1].strip()
+			goal = int(list_line[2].strip())
+			weight = list_line[3].strip()
+			self.dic_item[name] = {"name": name, "code": code, "goal": goal, "weight": weight}
+		file.close()
+
+		Label(self.master, text = ("%s(%%)\t%s\t%s\t%s" % ("차이", "이름".ljust(10), "저가", "목표가"))).pack()
+		self.list_label_goal = []
+		for item in self.dic_item:
+			label = Label(self.master, text="")
+			label.pack()
+			self.list_label_goal.append(label)
 
 def getWindowSize():
 	global WIDTH_WINDOW, HEIGHT_WINDOW
