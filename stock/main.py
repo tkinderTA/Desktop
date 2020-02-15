@@ -4,39 +4,80 @@ from tkinter.ttk import *
 import sys
 import requests
 
+X_PADDING = 5
+Y_PADDING = 5
+
+WIDTH_BUTTON_CONTROLLER = 5
+
 WIDTH_WINDOW = None
 HEIGHT_WINDOW = None
+
+HEADER_SWING = ["차이", "이름", "현재가", "저가", "목표가", "비중"]
+
+URL_NAVER = "https://finance.naver.com/item/main.nhn?code="
 
 class Window(Frame):
 	def __init__(self, master):
 		Frame.__init__(self, master)
- 
 		self.master = master
+
+		self.initializeWindowMain()
+		self.initializeWindowController()
+	
+	def initializeWindowMain(self):
 		self.master.title("Finance information")
 		self.master.overrideredirect(True)
+		self.master.withdraw()
 		self.pack(fill = BOTH, expand = True)
- 
-		frame_test = Frame(self)
-		frame_test.pack(fill = X)
- 
-		label_test = Label(frame_test, text="Test", width = 10)
-		label_test.pack(side = LEFT, padx = 10, pady = 10)
 
-		# 아래 코드 순서 변경하지 말기
+		self.makeFrameSwing()
+
 		self.master.update()
 		self.master.geometry("+%d+%d" % ( (WIDTH_WINDOW - self.master.winfo_width()) / 2, (HEIGHT_WINDOW - self.master.winfo_height()) / 2))
-		# 위 코드 순서 변경하지 말기
- 
-		# 초기에는 비 활성화
-		self.master.withdraw()
-	
-		window_controller = Toplevel()
-		window_controller.attributes("-topmost", True)
-		window_controller.overrideredirect(True)
 
-		"""
-		몰래 보기
-		"""
+	def makeFrameSwing(self):
+		frame_label = Frame(self)
+		frame_label.pack(padx = X_PADDING, pady = Y_PADDING, fill = X)
+		label = Label(frame_label)
+		label.pack()
+
+		frame_table = Frame(self)
+		frame_table.pack(padx = X_PADDING, pady = Y_PADDING, fill = X)
+
+		self.makeDictionaryGoal(label)
+
+		height = len(self.dic_item) + 1
+		width = len(HEADER_SWING)
+		self.list_text_swing = []
+		for i in range(height): #Rows
+			self.list_text_swing.append([])
+			for j in range(width): #Columns
+				self.list_text_swing[i].append(Text(frame_table, width = 10, height = 1))
+				self.list_text_swing[i][j].grid(row = i, column = j)
+		
+		for j in range(width):
+			self.list_text_swing[0][j].insert("current", HEADER_SWING[j])
+			self.list_text_swing[0][j].config(state = DISABLED)
+
+	def makeDictionaryGoal(self, label):
+		file = open("goal.csv", "r", encoding = "utf-8")
+		self.dic_item = {}
+		sum_weight = 0
+		for i, line in enumerate(file.readlines()):
+			if i == 0:
+				continue
+			list_line = line.split(",")
+			name = list_line[0].strip()
+			code = list_line[1].strip()
+			goal = int(list_line[2].strip())
+			weight = float(list_line[3].strip())
+			sum_weight += weight
+			self.dic_item[name] = {"name": name, "code": code, "goal": goal, "weight": weight}
+		file.close()
+
+		label.configure(text = "스윙 (비중 %.1f%%)" % sum_weight)
+
+	def makeButtonPeek(self):
 		self.window_peek = Toplevel()
 		self.window_peek.attributes("-topmost", True)
 		self.window_peek.overrideredirect(True)
@@ -50,13 +91,10 @@ class Window(Frame):
 				self.bool_peek = True
 				self.window_peek.update()
 				self.window_peek.deiconify()
-		button_peek = Button(window_controller, text = "/", width = 5, command = peekPrice)
+		button_peek = Button(self.window_controller, text = "/", width = WIDTH_BUTTON_CONTROLLER, command = peekPrice)
 		button_peek.pack(side = LEFT)
 
-		"""
-		메인 활성화
-		"""
-		self.makeListGoal()
+	def makeButtonMain(self):
 		self.bool_activation = False
 		def activateWindow():
 			if self.bool_activation:
@@ -72,59 +110,70 @@ class Window(Frame):
 				# 나중에 함수화하기
 				list_sort = []
 				for item in self.dic_item:
-					res = requests.get("https://finance.naver.com/item/main.nhn?code=" + self.dic_item[item]["code"])
+					res = requests.get(URL_NAVER + self.dic_item[item]["code"])
 					for line in res.text.split("\n"):
-						if "저가" in line:
+						if "현재가" in line:
 							price = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
 							self.dic_item[item]["price"] = price
 							diff = 100.0 * (self.dic_item[item]["goal"] - price) / price
 							list_sort.append((diff, item))
+						elif "저가" in line:
+							low = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
+							self.dic_item[item]["low"] = low
 							break
 				list_sort.sort(reverse = True)
+
+				width = len(self.list_text_swing[0])
+				height = len(self.list_text_swing)
+
+				for i in range(1, height):
+					for j in range(width):
+						self.list_text_swing[i][j].config(state = NORMAL)
+						self.list_text_swing[i][j].delete("1.0", END)
+
 				for i, item in enumerate(list_sort):
+					diff = item[0]
 					name = item[1]
-					self.list_label_goal[i].configure(text = ("%.2f%%\t%s\t%s\t%s" % (item[0], name.ljust(10), self.dic_item[name]["price"], self.dic_item[name]["goal"])))
+
+					self.list_text_swing[i + 1][0].insert("current", "%.2f%%" % diff)
+					self.list_text_swing[i + 1][1].insert("current", name)
+					self.list_text_swing[i + 1][2].insert("current", str(self.dic_item[name]["price"]))
+					self.list_text_swing[i + 1][3].insert("current", str(self.dic_item[name]["low"]))
+					self.list_text_swing[i + 1][3].tag_add("start", "1.0", "1.20")
+					if self.dic_item[name]["low"] <= self.dic_item[name]["goal"]:
+						self.list_text_swing[i + 1][3].tag_config("start", foreground = "red")
+					else:
+						self.list_text_swing[i + 1][3].tag_config("start", foreground = "black")
+					self.list_text_swing[i + 1][4].insert("current", str(self.dic_item[name]["goal"]))
+					self.list_text_swing[i + 1][5].insert("current", "%.1f%%" % self.dic_item[name]["weight"])
+
+				for i in range(1, height):
+					for j in range(width):
+						self.list_text_swing[i][j].config(state = DISABLED)
 				# 나중에 함수화하기
 
-
-		button_activation = Button(window_controller, text = "+", width = 5, command = activateWindow)
+		button_activation = Button(self.window_controller, text = "+", width = WIDTH_BUTTON_CONTROLLER, command = activateWindow)
 		button_activation.pack(side = LEFT)
 
-		"""
-		종료
-		"""
+	def makeButtonExit(self):
 		def exitProgram():
 			sys.exit()
-		button_exit = Button(window_controller, text = "x", width = 5, command = exitProgram)
+		button_exit = Button(self.window_controller, text = "x", width = WIDTH_BUTTON_CONTROLLER, command = exitProgram)
 		button_exit.pack()
 
-		# 아래 코드 순서 변경하지 말기
-		window_controller.update()
-		window_controller.geometry("+%d+%d" % ( WIDTH_WINDOW - window_controller.winfo_width(), HEIGHT_WINDOW - window_controller.winfo_height()))
-		# 위 코드 순서 변경하지 말기
-	
-	def makeListGoal(self):
-		file = open("goal.csv", "r", encoding = "utf-8")
-		self.dic_item = {}
-		for i, line in enumerate(file.readlines()):
-			if i == 0:
-				continue
-			list_line = line.split(",")
-			name = list_line[0].strip()
-			code = list_line[1].strip()
-			goal = int(list_line[2].strip())
-			weight = list_line[3].strip()
-			self.dic_item[name] = {"name": name, "code": code, "goal": goal, "weight": weight}
-		file.close()
+	def initializeWindowController(self):
+		self.window_controller = Toplevel()
+		self.window_controller.attributes("-topmost", True)
+		self.window_controller.overrideredirect(True)
 
-		Label(self.master, text = ("%s(%%)\t%s\t%s\t%s" % ("차이", "이름".ljust(10), "저가", "목표가"))).pack()
-		self.list_label_goal = []
-		for item in self.dic_item:
-			label = Label(self.master, text="")
-			label.pack()
-			self.list_label_goal.append(label)
+		self.makeButtonPeek()
+		self.makeButtonMain()
+		self.makeButtonExit()
+		
+		self.window_controller.update()
+		self.window_controller.geometry("+%d+%d" % ( WIDTH_WINDOW - self.window_controller.winfo_width(), HEIGHT_WINDOW - self.window_controller.winfo_height()))
 
-def getWindowSize():
+def initializeWindowSize():
 	global WIDTH_WINDOW, HEIGHT_WINDOW
 
 	list_area = GetMonitorInfo(MonitorFromPoint((0,0))).get("Work")
@@ -133,7 +182,7 @@ def getWindowSize():
 
 if __name__ == '__main__':
 
-	getWindowSize()
+	initializeWindowSize()
 
 	root = Tk()
 	window = Window(root)
