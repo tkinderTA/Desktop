@@ -12,6 +12,8 @@ WIDTH_BUTTON_CONTROLLER = 5
 WIDTH_WINDOW = None
 HEIGHT_WINDOW = None
 
+UNIT_SECOND = 1000
+
 HEADER_SWING = ["차이", "이름", "현재가", "저가", "목표가", "비중"]
 
 URL_NAVER = "https://finance.naver.com/item/main.nhn?code="
@@ -59,6 +61,30 @@ class Window(Frame):
 			self.list_text_swing[0][j].insert("current", HEADER_SWING[j])
 			self.list_text_swing[0][j].config(state = DISABLED)
 
+		self.updateGoal()
+
+		frame_button = Frame(self)
+		frame_button.pack(padx = X_PADDING, pady = Y_PADDING, fill = X)
+
+		button_update = Button(frame_button, text = "업데이트", command = self.updateGoal)
+		button_update.pack(side = RIGHT)
+
+		self.bool_auto = False
+		def threadUpdate():
+			if self.bool_auto:
+				self.updateGoal()
+				self.after(10 * UNIT_SECOND, threadUpdate)	
+		def updateAuto():
+			if self.bool_auto:
+				self.bool_auto = False
+				button_auto.configure(text = "자동 ON")
+			else:
+				self.bool_auto = True
+				button_auto.configure(text = "자동 OFF")
+				self.after(1 * UNIT_SECOND, threadUpdate)	
+		button_auto = Button(frame_button, text = "자동 ON", command = updateAuto)
+		button_auto.pack(side = RIGHT)
+
 	def makeDictionaryGoal(self, label):
 		file = open("goal.csv", "r", encoding = "utf-8")
 		self.dic_item = {}
@@ -76,6 +102,50 @@ class Window(Frame):
 		file.close()
 
 		label.configure(text = "스윙 (비중 %.1f%%)" % sum_weight)
+
+	def updateGoal(self):
+		list_sort = []
+		for item in self.dic_item:
+			res = requests.get(URL_NAVER + self.dic_item[item]["code"])
+			for line in res.text.split("\n"):
+				if "현재가" in line:
+					price = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
+					self.dic_item[item]["price"] = price
+					diff = 100.0 * (self.dic_item[item]["goal"] - price) / price
+					list_sort.append((diff, item))
+				elif "저가" in line:
+					low = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
+					self.dic_item[item]["low"] = low
+					break
+		list_sort.sort(reverse = True)
+
+		width = len(self.list_text_swing[0])
+		height = len(self.list_text_swing)
+
+		for i in range(1, height):
+			for j in range(width):
+				self.list_text_swing[i][j].config(state = NORMAL)
+				self.list_text_swing[i][j].delete("1.0", END)
+
+		for i, item in enumerate(list_sort):
+			diff = item[0]
+			name = item[1]
+
+			self.list_text_swing[i + 1][0].insert("current", "%.2f%%" % diff)
+			self.list_text_swing[i + 1][1].insert("current", name)
+			self.list_text_swing[i + 1][2].insert("current", format(self.dic_item[name]["price"], ","))
+			self.list_text_swing[i + 1][3].insert("current", format(self.dic_item[name]["low"], ","))
+			self.list_text_swing[i + 1][3].tag_add("start", "1.0", "1.20")
+			if self.dic_item[name]["low"] <= self.dic_item[name]["goal"]:
+				self.list_text_swing[i + 1][3].tag_config("start", foreground = "red")
+			else:
+				self.list_text_swing[i + 1][3].tag_config("start", foreground = "black")
+			self.list_text_swing[i + 1][4].insert("current", format(self.dic_item[name]["goal"], ","))
+			self.list_text_swing[i + 1][5].insert("current", "%.1f%%" % self.dic_item[name]["weight"])
+
+		for i in range(1, height):
+			for j in range(width):
+				self.list_text_swing[i][j].config(state = DISABLED)
 
 	def makeButtonPeek(self):
 		self.window_peek = Toplevel()
@@ -106,51 +176,6 @@ class Window(Frame):
 				self.master.update()
 				self.master.deiconify()
 				button_activation.configure(text = "-")
-
-				# 나중에 함수화하기
-				list_sort = []
-				for item in self.dic_item:
-					res = requests.get(URL_NAVER + self.dic_item[item]["code"])
-					for line in res.text.split("\n"):
-						if "현재가" in line:
-							price = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
-							self.dic_item[item]["price"] = price
-							diff = 100.0 * (self.dic_item[item]["goal"] - price) / price
-							list_sort.append((diff, item))
-						elif "저가" in line:
-							low = int(line.strip().split(" ")[1].split("<")[0].replace(",", ""))
-							self.dic_item[item]["low"] = low
-							break
-				list_sort.sort(reverse = True)
-
-				width = len(self.list_text_swing[0])
-				height = len(self.list_text_swing)
-
-				for i in range(1, height):
-					for j in range(width):
-						self.list_text_swing[i][j].config(state = NORMAL)
-						self.list_text_swing[i][j].delete("1.0", END)
-
-				for i, item in enumerate(list_sort):
-					diff = item[0]
-					name = item[1]
-
-					self.list_text_swing[i + 1][0].insert("current", "%.2f%%" % diff)
-					self.list_text_swing[i + 1][1].insert("current", name)
-					self.list_text_swing[i + 1][2].insert("current", str(self.dic_item[name]["price"]))
-					self.list_text_swing[i + 1][3].insert("current", str(self.dic_item[name]["low"]))
-					self.list_text_swing[i + 1][3].tag_add("start", "1.0", "1.20")
-					if self.dic_item[name]["low"] <= self.dic_item[name]["goal"]:
-						self.list_text_swing[i + 1][3].tag_config("start", foreground = "red")
-					else:
-						self.list_text_swing[i + 1][3].tag_config("start", foreground = "black")
-					self.list_text_swing[i + 1][4].insert("current", str(self.dic_item[name]["goal"]))
-					self.list_text_swing[i + 1][5].insert("current", "%.1f%%" % self.dic_item[name]["weight"])
-
-				for i in range(1, height):
-					for j in range(width):
-						self.list_text_swing[i][j].config(state = DISABLED)
-				# 나중에 함수화하기
 
 		button_activation = Button(self.window_controller, text = "+", width = WIDTH_BUTTON_CONTROLLER, command = activateWindow)
 		button_activation.pack(side = LEFT)
