@@ -132,6 +132,13 @@ class Window(Frame):
 			name = item[1]
 
 			self.list_text_swing[i + 1][0].insert("current", "%.2f%%" % diff)
+			self.list_text_swing[i + 1][0].tag_add("start", "1.0", "1.20")
+			if diff >= 0:
+				self.list_text_swing[i + 1][0].tag_config("start", foreground = "red")
+			elif diff >= -5:
+				self.list_text_swing[i + 1][0].tag_config("start", foreground = "blue")
+			else:
+				self.list_text_swing[i + 1][0].tag_config("start", foreground = "black")
 			self.list_text_swing[i + 1][1].insert("current", name)
 			self.list_text_swing[i + 1][2].insert("current", format(self.dic_item[name]["price"], ","))
 			self.list_text_swing[i + 1][3].insert("current", format(self.dic_item[name]["low"], ","))
